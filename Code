@@ -1,0 +1,87 @@
+#include <SoftwareSerial.h>
+#include <Wire.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_ADXL345_U.h>
+#include <TinyGPS++.h>
+
+// Define pins
+#define GPS_BAUD 9600
+#define GSM_BAUD 9600
+#define ACCELEROMETER_ADDRESS 0x53
+
+// Initialize serial communications
+SoftwareSerial gpsSerial(4, 3); // RX, TX for GPS
+SoftwareSerial gsmSerial(7, 8); // RX, TX for GSM
+
+TinyGPSPlus gps;
+Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified(ACCELEROMETER_ADDRESS);
+
+// Variables
+bool accidentDetected = false;
+float accidentThreshold = 20.0; // Example threshold for collision detection
+String phoneNumber = "+917075403540"; // Replace with your emergency contact number
+
+void setup() {
+  // Start serial communication
+  Serial.begin(9600);
+  gpsSerial.begin(GPS_BAUD);
+  gsmSerial.begin(GSM_BAUD);
+
+  // Initialize accelerometer
+  if (!accel.begin()) {
+    Serial.println("Couldn't find ADXL345 accelerometer");
+    while (1);
+  }
+
+  // Initialize GSM module
+  gsmSerial.println("AT"); // Check if GSM module is ready
+  delay(1000);
+  gsmSerial.println("AT+CMGF=1"); // Set SMS mode to text
+  delay(1000);
+}
+
+void loop() {
+  // Read accelerometer data
+  sensors_event_t event;
+  accel.getEvent(&event);
+
+  // Check for collision based on acceleration
+  float acceleration = sqrt(sq(event.acceleration.x) + sq(event.acceleration.y) + sq(event.acceleration.z));
+  if (acceleration > accidentThreshold) {
+    if (!accidentDetected) {
+      accidentDetected = true;
+      sendAlert();
+    }
+  } else {
+    accidentDetected = false;
+  }
+
+  // Read GPS data
+  while (gpsSerial.available() > 0) {
+    gps.encode(gpsSerial.read());
+
+    if (gps.location.isUpdated()) {
+      Serial.print("Latitude= "); 
+      Serial.print(gps.location.lat(), 6);
+      Serial.print(" Longitude= "); 
+      Serial.println(gps.location.lng(), 6);
+    }
+  }
+}
+
+void sendAlert() {
+  // Read GPS coordinates
+  String message = "Accident detected! Location: ";
+  message += "http://maps.google.com/?q=";
+  message += gps.location.lat(), 6;
+  message += ",";
+  message += gps.location.lng(), 6;
+
+  // Send SMS
+  gsmSerial.println("AT+CMGS=\"" + phoneNumber + "\"");
+  delay(1000);
+  gsmSerial.println(message);
+  delay(1000);
+  gsmSerial.println((char)26); // ASCII code for CTRL+Z
+  delay(1000);
+}
