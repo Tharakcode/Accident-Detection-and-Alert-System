@@ -1,9 +1,6 @@
 # Accident-Detection-and-Alert-System
 Developed a cutting-edge Accident Detection and Alert System using a Nano microcontroller, GPS module, and SIM module to enhance vehicle safety and emergency response. This system provides real-time collision detection and immediate alerts to improve response times and ensure driver and passenger safety
 
-## Overview
-This project implements an **Accident Detection and Alert System** using an Arduino Nano microcontroller, a GPS module, and a GSM module. The system detects collisions based on acceleration changes and sends real-time SMS alerts with the vehicle's GPS location to emergency contacts.
-
 ## Hardware Required
 - Arduino Nano
 - GPS Module (e.g., NEO-6M)
